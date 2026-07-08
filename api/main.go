@@ -107,7 +107,7 @@ func newCS2GameServer(req CreateServerRequest) *unstructured.Unstructured {
 										"valueFrom": map[string]interface{}{
 											"secretKeyRef": map[string]interface{}{
 												"name": "cs2-secret",
-												"key":  "", // put token
+												"key":  "SRCDS_TOKEN",
 											},
 										},
 									},

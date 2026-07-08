@@ -80,7 +80,7 @@ Build and load the lifecycle image:
 
 ```bash
 docker build -t cs2-agones:v1 . 
-minikube image load cs2-agones-lifecycle:v1 -p agones
+minikube image load cs2-agones:v1 -p agones
 ```
 
 ---
