@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cs2-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 70Gi
+---
+apiVersion: agones.dev/v1
+kind: GameServer
+metadata:
+  name: cs2
+spec:
+  # Required because this pod has more than one container.
+  container: cs2
+
+  ports:
+    - name: game
+      portPolicy: Static
+      hostPort: 27015
+      containerPort: 27015
+      protocol: TCPUDP
+
+    - name: sourcetv
+      portPolicy: Static
+      hostPort: 27020
+      containerPort: 27020
+      protocol: UDP
+
+  health:
+    disabled: false
+    initialDelaySeconds: 30
+    periodSeconds: 5
+    failureThreshold: 10
+
+  template:
+    spec:
+      terminationGracePeriodSeconds: 60
+
+      containers:
+        - name: cs2
+          image: joedwards32/cs2:latest
+          imagePullPolicy: IfNotPresent
+
+          env:
+            - name: SRCDS_TOKEN
+              value: "" # put token
+
+            - name: CS2_SERVERNAME
+              value: "Agones Minikube CS2"
+
+            - name: CS2_PORT
+              value: "27015"
+
+            - name: CS2_RCONPW
+              value: "change-this-password"
+
+            - name: CS2_MAXPLAYERS
+              value: "10"
+
+            # For LAN-only local testing you can set this to "1".
+            # For public Steam listing, keep it "0" and use a valid SRCDS_TOKEN.
+            - name: CS2_LAN
+              value: "0"
+
+          ports:
+            - name: game-tcp
+              containerPort: 27015
+              protocol: TCP
+            - name: game-udp
+              containerPort: 27015
+              protocol: UDP
+            - name: sourcetv
+              containerPort: 27020
+              protocol: UDP
+
+          volumeMounts:
+            - name: cs2-data
+              mountPath: /home/steam/cs2-dedicated/
+
+          resources:
+            requests:
+              cpu: "2"
+              memory: "2Gi"
+            limits:
+              cpu: "4"
+              memory: "6Gi"
+
+        # CS2 does not call Agones SDK itself.
+        # This sidecar keeps Agones health alive and marks the GameServer Ready
+        # once TCP 27015 is accepting connections.
+        - name: agones-lifecycle
+          image: cs2-agones:local
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: GAME_PORT
+              value: "27015"
+
+      volumes:
+        - name: cs2-data
+          persistentVolumeClaim:
+            claimName: cs2-data

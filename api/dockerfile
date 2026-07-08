@@ -1,0 +1,17 @@
+FROM golang:1.26-alpine AS build
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY main.go ./
+RUN CGO_ENABLED=0 GOOS=linux go build -o /cs2-api .
+
+FROM alpine:3.20
+
+COPY --from=build /cs2-api /cs2-api
+
+EXPOSE 8080
+
+ENTRYPOINT ["/cs2-api"]
