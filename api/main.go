@@ -209,13 +209,7 @@ func extractGamePort(gs *unstructured.Unstructured) int64 {
 	return 0
 }
 
-func waitForGameServerReady(
-	ctx context.Context,
-	client dynamic.Interface,
-	namespace string,
-	name string,
-	timeout time.Duration,
-) (*ServerResponse, error) {
+func startGameServer(ctx context.Context, client dynamic.Interface, namespace string, name string, timeout time.Duration,) (*ServerResponse, error) {
 	deadline := time.Now().Add(timeout)
 
 	for time.Now().Before(deadline) {
@@ -232,7 +226,7 @@ func waitForGameServerReady(
 		address, _, _ := unstructured.NestedString(gs.Object, "status", "address")
 		port := extractGamePort(gs)
 
-		if state == "Ready" && address != "" && port != 0 {
+		if address != "" && port != 0 {
 			return &ServerResponse{
 				Name:    name,
 				State:   state,
@@ -288,15 +282,11 @@ func main() {
 
 		name := created.GetName()
 
-		resp, err := waitForGameServerReady(ctx, client, namespace, name, 15*time.Minute)
+		resp, err := startGameServer(ctx, client, namespace, name, 15*time.Minute)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
-			_ = json.NewEncoder(w).Encode(ServerResponse{
-				Name:    name,
-				State:   "Creating",
-				Message: err.Error(),
-			})
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 

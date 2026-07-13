@@ -47,7 +47,7 @@ spec:
 
           env:
             - name: SRCDS_TOKEN
-              value: "85F92DC80C0C1FFD9A600D1F779C8BD2"
+              value: "" # put token
 
             - name: CS2_SERVERNAME
               value: "Agones Minikube CS2"
